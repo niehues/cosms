@@ -16,5 +16,5 @@ __credits__ = [ "Anna Niehues", "Stefan Cord-Landwehr", "Jasper Wattjes",
                "Lea Hembach" ]
 
 #__license__ = ""
-__version__ = "2.0"
+__version__ = "0.2"
 __email__ = "anna.niehues@uni-muenster.de"

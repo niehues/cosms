@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 """Analyze MS data in mzML file format
-MS1 and MS2 analysis
+Targeted MS1 and MS2 analysis
 """
 import argparse
 import os

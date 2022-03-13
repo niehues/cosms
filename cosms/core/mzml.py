@@ -348,17 +348,16 @@ class MzmlFile():
         rt_intensities = {1: ddict(list), -1: ddict(list)}
         for spectrum in self.run():
             if spectrum.ms_level == ms_level:
-                ion_mode = 1
-                for element in spectrum.element.getiterator():
-                    if element.get('accession', default = None
-                                   ) == 'MS:1000129': #i.e. negative scan
-                        ion_mode = -1
-                round_rt = round(spectrum['scan start time'] / 
+                if spectrum["positive scan"]:
+                    ion_mode = 1
+                elif spectrum["negative scan"]:
+                    ion_mode = -1
+                round_rt = round(spectrum.scan_time_in_minutes() / 
                     self.rough_noise_rt_window) * self.rough_noise_rt_window
-                rt_to_round_rt[ion_mode][spectrum['scan start time']] = round_rt
+                rt_to_round_rt[ion_mode][spectrum.scan_time_in_minutes()] = round_rt
                 round_rt_set[ion_mode].add(round_rt)
                 rt_intensities[ion_mode
-                               ][spectrum['scan start time']
+                               ][spectrum.scan_time_in_minutes()
                                  ] += list(spectrum.i)
                 
         rough_noise_levels = {1: {}, -1: {}}
@@ -414,20 +413,19 @@ class MzmlFile():
         mz_window_size = self.noise_mz_window
         for spectrum in self.run():
             if spectrum.ms_level == ms_level:
-                ion_mode = 1
-                for element in spectrum.element.getiterator():
-                    if element.get('accession', default = None
-                                   ) == 'MS:1000129': #i.e. negative scan
-                        ion_mode = -1
-                round_rt = round(spectrum['scan start time'] / 
+                if spectrum["positive scan"]:
+                    ion_mode = 1
+                elif spectrum["negative scan"]:
+                    ion_mode = -1
+                round_rt = round(spectrum.scan_time_in_minutes() / 
                     self.rough_noise_rt_window) * self.rough_noise_rt_window
-                rt_to_round_rt[ion_mode][spectrum['scan start time']] = round_rt
+                rt_to_round_rt[ion_mode][spectrum.scan_time_in_minutes()] = round_rt
                 round_rt_set[ion_mode].add(round_rt)
                 for mz in round_mz_list:
                     lowidx = bisect.bisect(spectrum.mz, mz-mz_window_size)
                     highidx = bisect.bisect(spectrum.mz, mz+mz_window_size)
                     rt_intensities[ion_mode
-                                   ][spectrum['scan start time'], mz
+                                   ][spectrum.scan_time_in_minutes(), mz
                                      ] += list(spectrum.i)[lowidx:highidx]
                 
         rough_noise_levels = {1: {}, -1: {}}
@@ -497,21 +495,19 @@ class MzmlFile():
             if spectrum.ms_level == 1:
                 # <cvParam cvRef="MS" accession="MS:1000130" name="positive scan"/>
                 # <cvParam cvRef="MS" accession="MS:1000129" name="negative scan"/>
-                ion_mode = 1
-                for element in spectrum.element.getiterator():
-                    if element.get('accession', default = None
-                                   ) == 'MS:1000129': #i.e. negative scan
-                        ion_mode = -1
+                if spectrum["positive scan"]:
+                    ion_mode = 1
+                elif spectrum["negative scan"]:
+                    ion_mode = -1
                 try:
-                    bpc.add(spectrum['scan start time'], 
+                    bpc.add(spectrum.scan_time_in_minutes(), 
                             spectrum.highest_peaks(1)[0][1])
                 except:
                     continue
                 for cos in cos_list:
                     if ion_mode * cos.charge < 0:
                         continue
-                    if not cos.min_rt or cos.min_rt < spectrum['scan start time'
-                                                               ] < cos.max_rt:
+                    if not cos.min_rt or cos.min_rt < spectrum.scan_time_in_minutes() < cos.max_rt:
                         left = bisect.bisect_left(spectrum.mz, cos.mz - 2) 
                         right = bisect.bisect_right(spectrum.mz, cos.mz + 5) 
                         spec_section = [
@@ -519,7 +515,7 @@ class MzmlFile():
                             for mz, i in
                             zip(spectrum.mz[left:right], spectrum.i[left:right])]
 #                             spectrum.peaks('raw')[left:right]]
-                        xi_specs[cos.key].append((spectrum['scan start time'],
+                        xi_specs[cos.key].append((spectrum.scan_time_in_minutes(),
                                                   spec_section))
         cos_i = {}
         if plotting:
@@ -698,13 +694,12 @@ class MzmlFile():
 #                     spectrum.ms_level, spectrum['id'] ), end = '\r')
                 precursor_mz = float(spectrum['MS:1000744'])
                 tic = float(spectrum['MS:1000285'])
-                tic_chromatogram.add(spectrum['scan start time'], tic)
+                tic_chromatogram.add(spectrum.scan_time_in_minutes(), tic)
                 precursors_in_spec = []
                 for prec_key, (min_mz, max_mz) in precursor_mz_ranges.items():
                     if min_mz < precursor_mz < max_mz:
                         if not precursors[prec_key].min_rt or precursors[
-                            prec_key].min_rt < spectrum['scan start time'
-                            ] < precursors[prec_key].max_rt:
+                            prec_key].min_rt < spectrum.scan_time_in_minutes() < precursors[prec_key].max_rt:
                             if precursors_in_spec:
                                 print("WARNING: more than one precursor mass")
                             precursors_in_spec.append(prec_key)
@@ -735,9 +730,9 @@ class MzmlFile():
                     if found_fragments > fragments_per_spec_threshold: 
                         #filtering has impact on sequencing results
                         num_spectra[prec_key] += 1
-                        retention_times[prec_key].add(spectrum['scan start time'])
+                        retention_times[prec_key].add(spectrum.scan_time_in_minutes())
                         precursor_chromatograms[prec_key
-                                                ].add(spectrum['scan start time'], 
+                                                ].add(spectrum.scan_time_in_minutes(), 
                                                       tic)
                         for (frag_type, dp), fragments in precursors[prec_key
                             ].fragment_ions.items():
@@ -870,13 +865,12 @@ class MzmlFile():
 #                     spectrum.ms_level, spectrum['id'] ), end = '\r')
                 precursor_mz = float(spectrum['MS:1000744'])
                 tic = float(spectrum['MS:1000285'])
-                tic_chromatogram.add(spectrum['scan start time'], tic)
+                tic_chromatogram.add(spectrum.scan_time_in_minutes(), tic)
                 precursors_in_spec = []
                 for prec_key, (min_mz, max_mz) in precursor_mz_ranges.items():
                     if min_mz < precursor_mz < max_mz:
                         if not precursors[prec_key].min_rt or precursors[
-                            prec_key].min_rt < spectrum['scan start time'
-                            ] < precursors[prec_key].max_rt:
+                            prec_key].min_rt < spectrum.scan_time_in_minutes() < precursors[prec_key].max_rt:
                             if precursors_in_spec:
                                 print("WARNING: more than one precursor mass")
                             precursors_in_spec.append(prec_key)
@@ -900,9 +894,9 @@ class MzmlFile():
                     if found_fragments > fragments_per_spec_threshold: 
                         #filtering has impact on sequencing results
                         num_spectra[prec_key] += 1
-                        retention_times[prec_key].add(spectrum['scan start time'])
+                        retention_times[prec_key].add(spectrum.scan_time_in_minutes())
                         precursor_chromatograms[prec_key
-                                                ].add(spectrum['scan start time'], 
+                                                ].add(spectrum.scan_time_in_minutes(), 
                                                       tic)
                         for (frag_type, dp), fragments in precursors[prec_key
                             ].fragment_ions.items():
