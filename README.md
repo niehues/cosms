@@ -13,7 +13,7 @@ Run following steps in Anaconda Prompt
 2. Activate new environment
 
     ```
-    source activate cosmspym2
+    conda activate cosmspym2
     ```
 
 3. Install cosms and dependencies
@@ -44,7 +44,7 @@ Run following steps in Anaconda Prompt
 1. Activate environment
 
     ```
-    source activate cosmspym2
+    conda activate cosmspym2
     ```
 
 2. Run Jupyter notebook
